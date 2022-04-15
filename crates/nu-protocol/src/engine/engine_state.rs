@@ -446,7 +446,7 @@ impl EngineState {
         None
     }
 
-    pub fn find_commands_by_prefix(&self, name: &[u8]) -> Vec<(Vec<u8>, Option<String>)> {
+    pub fn find_commands_by_prefix(&self, name: &[u8]) -> Vec<(Vec<u8>, Option<String>, i64)> {
         let mut output = vec![];
 
         if name.is_empty() {
@@ -461,9 +461,9 @@ impl EngineState {
                 let decl_str: &str = std::str::from_utf8(decl.0).unwrap();
                 let fuzzy_match = matcher.fuzzy_indices(decl_str, name_str);
 
-                if let Some(_) = fuzzy_match {
+                if let Some((score, _)) = fuzzy_match {
                     let command = self.get_decl(*decl.1);
-                    output.push((decl.0.clone(), Some(command.usage().to_string())));
+                    output.push((decl.0.clone(), Some(command.usage().to_string()), score));
                 }
             }
         }
@@ -1327,7 +1327,7 @@ impl<'a> StateWorkingSet<'a> {
         }
     }
 
-    pub fn find_commands_by_prefix(&self, name: &[u8]) -> Vec<(Vec<u8>, Option<String>)> {
+    pub fn find_commands_by_prefix(&self, name: &[u8]) -> Vec<(Vec<u8>, Option<String>, i64)> {
         let mut output = vec![];
 
         if name.is_empty() {
@@ -1342,9 +1342,9 @@ impl<'a> StateWorkingSet<'a> {
                 let decl_str: &str = std::str::from_utf8(decl.0).unwrap();
                 let fuzzy_match = matcher.fuzzy_indices(decl_str, name_str);
 
-                if let Some(_) = fuzzy_match {
+                if let Some((score, _)) = fuzzy_match {
                     let command = self.get_decl(*decl.1);
-                    output.push((decl.0.clone(), Some(command.usage().to_string())));
+                    output.push((decl.0.clone(), Some(command.usage().to_string()), score));
                 }
             }
         }
