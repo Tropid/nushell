@@ -1,3 +1,5 @@
+use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
+
 use super::{Command, Stack};
 use crate::{
     ast::Block, AliasId, BlockId, Config, DeclId, Example, Overlay, OverlayId, ShellError,
@@ -447,9 +449,19 @@ impl EngineState {
     pub fn find_commands_by_prefix(&self, name: &[u8]) -> Vec<(Vec<u8>, Option<String>)> {
         let mut output = vec![];
 
+        if name.is_empty() {
+            return output;
+        }
+
+        let matcher = SkimMatcherV2::default();
+
         for scope in self.scope.iter().rev() {
             for decl in &scope.decls {
-                if decl.0.starts_with(name) {
+                let name_str: &str = std::str::from_utf8(name).unwrap();
+                let decl_str: &str = std::str::from_utf8(decl.0).unwrap();
+                let fuzzy_match = matcher.fuzzy_indices(decl_str, name_str);
+
+                if let Some(_) = fuzzy_match {
                     let command = self.get_decl(*decl.1);
                     output.push((decl.0.clone(), Some(command.usage().to_string())));
                 }
@@ -1318,9 +1330,19 @@ impl<'a> StateWorkingSet<'a> {
     pub fn find_commands_by_prefix(&self, name: &[u8]) -> Vec<(Vec<u8>, Option<String>)> {
         let mut output = vec![];
 
+        if name.is_empty() {
+            return output;
+        }
+
+        let matcher = SkimMatcherV2::default();
+
         for scope in self.delta.scope.iter().rev() {
             for decl in &scope.decls {
-                if decl.0.starts_with(name) {
+                let name_str: &str = std::str::from_utf8(name).unwrap();
+                let decl_str: &str = std::str::from_utf8(decl.0).unwrap();
+                let fuzzy_match = matcher.fuzzy_indices(decl_str, name_str);
+
+                if let Some(_) = fuzzy_match {
                     let command = self.get_decl(*decl.1);
                     output.push((decl.0.clone(), Some(command.usage().to_string())));
                 }
