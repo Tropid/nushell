@@ -90,6 +90,7 @@ impl CommandCompletion {
                     start: span.start - offset,
                     end: span.end - offset,
                 },
+                score: x.2,
             });
 
         let results_aliases =
@@ -104,6 +105,7 @@ impl CommandCompletion {
                         start: span.start - offset,
                         end: span.end - offset,
                     },
+                    score: 0,
                 });
 
         let mut results = results.chain(results_aliases).collect::<Vec<_>>();
@@ -122,6 +124,7 @@ impl CommandCompletion {
                             start: span.start - offset,
                             end: span.end - offset,
                         },
+                        score: 0,
                     });
 
             for external in results_external {
@@ -131,6 +134,7 @@ impl CommandCompletion {
                         description: None,
                         extra: None,
                         span: external.span,
+                        score: 0,
                     })
                 } else {
                     results.push(external)
@@ -259,6 +263,7 @@ impl Completer for CommandCompletion {
                     start: x.0.start - offset,
                     end: x.0.end - offset,
                 },
+                score: 0,
             })
             .chain(subcommands.into_iter())
             .chain(commands.into_iter())

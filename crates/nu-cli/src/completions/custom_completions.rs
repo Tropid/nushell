@@ -43,6 +43,7 @@ impl CustomCompletion {
                         start: span.start - offset,
                         end: span.end - offset,
                     },
+                    score: 0,
                 }),
                 Err(_) => None,
             }

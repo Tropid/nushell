@@ -57,6 +57,7 @@ impl Completer for VariableCompletion {
                         description: None,
                         extra: None,
                         span: current_span,
+                        score: 0,
                     });
                 }
 
@@ -93,6 +94,7 @@ impl Completer for VariableCompletion {
                                     description: None,
                                     extra: None,
                                     span: current_span,
+                                    score: 0,
                                 });
                             }
 
@@ -115,6 +117,7 @@ impl Completer for VariableCompletion {
                     description: None,
                     extra: None,
                     span: current_span,
+                    score: 0,
                 });
             }
         }
@@ -128,6 +131,7 @@ impl Completer for VariableCompletion {
                         description: None,
                         extra: None,
                         span: current_span,
+                        score: 0,
                     });
                 }
             }
@@ -142,6 +146,7 @@ impl Completer for VariableCompletion {
                         description: None,
                         extra: None,
                         span: current_span,
+                        score: 0,
                     });
                 }
             }

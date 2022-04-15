@@ -49,6 +49,7 @@ impl Completer for FlagCompletion {
                                 start: span.start - offset,
                                 end: span.end - offset,
                             },
+                            score: 0,
                         });
                     }
                 }
@@ -69,6 +70,7 @@ impl Completer for FlagCompletion {
                             start: span.start - offset,
                             end: span.end - offset,
                         },
+                        score: 0,
                     });
                 }
             }

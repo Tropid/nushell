@@ -3532,8 +3532,7 @@ dependencies = [
 [[package]]
 name = "reedline"
 version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01487ee6361e894f914d59f4310deea779222357637ac576f34741a18dd02ed2"
+source = "git+https://github.com/Tropid/reedline?branch=feature/suggestion-score#10a905df50bd1d5f9995c5ca5bb9fb84816f8595"
 dependencies = [
  "chrono",
  "crossterm",

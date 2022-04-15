@@ -69,6 +69,8 @@ pub trait Completer {
             SortBy::None => {}
         };
 
+        filtered_items.sort_by(|lhs, rhs| rhs.score.cmp(&lhs.score));
+
         filtered_items
     }
 }
