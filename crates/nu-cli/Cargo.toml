@@ -19,6 +19,7 @@ crossterm = "0.23.0"
 miette = { version = "4.5.0", features = ["fancy"] }
 thiserror = "1.0.29"
 reedline = { git = "https://github.com/Tropid/reedline", branch = "feature/suggestion-score", features = ["bashisms"]}
+fuzzy-matcher = "0.3.7"
 
 log = "0.4"
 is_executable = "1.0.1"

@@ -48,7 +48,7 @@ impl Completer for FileCompletion {
                     start: x.0.start - offset,
                     end: x.0.end - offset,
                 },
-                score: 0,
+                score: None,
             })
             .collect();
 

@@ -1,13 +1,14 @@
 use crate::completions::{
     file_completions::file_path_completion, Completer, CompletionOptions, SortBy,
 };
+use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use nu_parser::{trim_quotes, FlatShape};
 use nu_protocol::{
     engine::{EngineState, StateWorkingSet},
     Span,
 };
 use reedline::Suggestion;
-use std::sync::Arc;
+use std::{collections::HashSet, sync::Arc};
 
 pub struct CommandCompletion {
     engine_state: Arc<EngineState>,
@@ -32,10 +33,13 @@ impl CommandCompletion {
         }
     }
 
-    fn external_command_completion(&self, prefix: &str) -> Vec<String> {
-        let mut executables = vec![];
+    fn external_command_completion(&self, prefix: &str) -> Vec<(String, i64)> {
+        let mut executables: Vec<(String, i64)> = vec![];
+        let mut executable_names = HashSet::new();
 
         let paths = self.engine_state.env_vars.get("PATH");
+
+        let matcher = SkimMatcherV2::default();
 
         if let Some(paths) = paths {
             if let Ok(paths) = paths.as_list() {
@@ -44,21 +48,27 @@ impl CommandCompletion {
 
                     if let Ok(mut contents) = std::fs::read_dir(path) {
                         while let Some(Ok(item)) = contents.next() {
-                            if !executables.contains(
+                            if executable_names.contains(
                                 &item
                                     .path()
                                     .file_name()
                                     .map(|x| x.to_string_lossy().to_string())
                                     .unwrap_or_default(),
-                            ) && matches!(
-                                item.path()
-                                    .file_name()
-                                    .map(|x| x.to_string_lossy().starts_with(prefix)),
-                                Some(true)
-                            ) && is_executable::is_executable(&item.path())
-                            {
-                                if let Ok(name) = item.file_name().into_string() {
-                                    executables.push(name);
+                            ) {
+                                continue;
+                            }
+
+                            if !is_executable::is_executable(&item.path()) {
+                                continue;
+                            }
+
+                            if let Some(file_name) = item.path().file_name() {
+                                let file_name = file_name.to_string_lossy();
+                                let fuzzy_match = matcher.fuzzy_indices(&file_name, prefix);
+
+                                if let Some((score, _)) = fuzzy_match {
+                                    executable_names.insert(file_name.to_string());
+                                    executables.push((file_name.to_string(), score));
                                 }
                             }
                         }
@@ -90,7 +100,7 @@ impl CommandCompletion {
                     start: span.start - offset,
                     end: span.end - offset,
                 },
-                score: x.2,
+                score: Some(x.2),
             });
 
         let results_aliases =
@@ -105,7 +115,7 @@ impl CommandCompletion {
                         start: span.start - offset,
                         end: span.end - offset,
                     },
-                    score: 0,
+                    score: None,
                 });
 
         let mut results = results.chain(results_aliases).collect::<Vec<_>>();
@@ -117,14 +127,14 @@ impl CommandCompletion {
                 self.external_command_completion(&prefix)
                     .into_iter()
                     .map(move |x| Suggestion {
-                        value: x,
+                        value: x.0,
                         description: None,
                         extra: None,
                         span: reedline::Span {
                             start: span.start - offset,
                             end: span.end - offset,
                         },
-                        score: 0,
+                        score: Some(x.1),
                     });
 
             for external in results_external {
@@ -134,7 +144,7 @@ impl CommandCompletion {
                         description: None,
                         extra: None,
                         span: external.span,
-                        score: 0,
+                        score: None,
                     })
                 } else {
                     results.push(external)
@@ -263,7 +273,7 @@ impl Completer for CommandCompletion {
                     start: x.0.start - offset,
                     end: x.0.end - offset,
                 },
-                score: 0,
+                score: None,
             })
             .chain(subcommands.into_iter())
             .chain(commands.into_iter())

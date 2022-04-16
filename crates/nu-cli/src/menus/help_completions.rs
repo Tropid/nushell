@@ -92,7 +92,7 @@ impl NuHelpCompleter {
                         start: pos,
                         end: pos + line.len(),
                     },
-                    score: 0,
+                    score: None,
                 }
             })
             .collect()

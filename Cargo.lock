@@ -1052,9 +1052,9 @@ dependencies = [
 
 [[package]]
 name = "filetime"
-version = "0.2.15"
+version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "975ccf83d8d9d0d84682850a38c8169027be83368805971cc4f238c2b245bc98"
+checksum = "c0408e2626025178a6a7f7ffc05a25bc47103229f19c113755de7bf63816290c"
 dependencies = [
  "cfg-if",
  "libc",
@@ -2293,6 +2293,7 @@ name = "nu-cli"
 version = "0.61.1"
 dependencies = [
  "crossterm",
+ "fuzzy-matcher",
  "is_executable",
  "log",
  "miette 4.5.0",
@@ -3532,7 +3533,7 @@ dependencies = [
 [[package]]
 name = "reedline"
 version = "0.4.0"
-source = "git+https://github.com/Tropid/reedline?branch=feature/suggestion-score#10a905df50bd1d5f9995c5ca5bb9fb84816f8595"
+source = "git+https://github.com/Tropid/reedline?branch=feature/suggestion-score#65c3e442e2f3c4ac92ce1ffd5febca881b9172cc"
 dependencies = [
  "chrono",
  "crossterm",
