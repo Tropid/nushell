@@ -6,14 +6,16 @@ mod custom_completions;
 mod dotnu_completions;
 mod file_completions;
 mod flag_completions;
+mod matcher;
 mod variable_completions;
 
 pub use base::Completer;
 pub use command_completions::CommandCompletion;
 pub use completer::NuCompleter;
-pub use completion_options::{CompletionOptions, SortBy};
+pub use completion_options::{CompletionOptions, Matcher, SortBy};
 pub use custom_completions::CustomCompletion;
 pub use dotnu_completions::DotNuCompletion;
 pub use file_completions::{file_path_completion, partial_from, FileCompletion};
 pub use flag_completions::FlagCompletion;
+pub use matcher::TextMatcher;
 pub use variable_completions::VariableCompletion;

@@ -1,7 +1,7 @@
 use crate::completions::{
-    file_completions::file_path_completion, Completer, CompletionOptions, SortBy,
+    file_completions::file_path_completion, Completer, CompletionOptions, Matcher,
+    matcher::{FuzzyMatcher, MatchScore, TextMatcher}
 };
-use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use nu_parser::{trim_quotes, FlatShape};
 use nu_protocol::{
     engine::{EngineState, StateWorkingSet},
@@ -33,13 +33,15 @@ impl CommandCompletion {
         }
     }
 
-    fn external_command_completion(&self, prefix: &str) -> Vec<(String, i64)> {
-        let mut executables: Vec<(String, i64)> = vec![];
+    fn external_command_completion(
+        &self,
+        prefix: &str,
+        matcher: &dyn TextMatcher,
+    ) -> Vec<(String, MatchScore)> {
+        let mut executables: Vec<(String, MatchScore)> = vec![];
         let mut executable_names = HashSet::new();
 
         let paths = self.engine_state.env_vars.get("PATH");
-
-        let matcher = SkimMatcherV2::default();
 
         if let Some(paths) = paths {
             if let Ok(paths) = paths.as_list() {
@@ -64,9 +66,8 @@ impl CommandCompletion {
 
                             if let Some(file_name) = item.path().file_name() {
                                 let file_name = file_name.to_string_lossy();
-                                let fuzzy_match = matcher.fuzzy_indices(&file_name, prefix);
 
-                                if let Some((score, _)) = fuzzy_match {
+                                if let Some(score) = matcher.matches(&file_name, prefix) {
                                     executable_names.insert(file_name.to_string());
                                     executables.push((file_name.to_string(), score));
                                 }
@@ -82,6 +83,7 @@ impl CommandCompletion {
 
     fn complete_commands(
         &self,
+        matcher: &dyn TextMatcher,
         working_set: &StateWorkingSet,
         span: Span,
         offset: usize,
@@ -90,7 +92,9 @@ impl CommandCompletion {
         let prefix = working_set.get_span_contents(span);
 
         let results = working_set
-            .find_commands_by_prefix(prefix)
+            .find_commands_by_prefix(prefix, |haystack, needle| {
+                matcher.matches(haystack, needle).map(|score| score.0)
+            })
             .into_iter()
             .map(move |x| Suggestion {
                 value: String::from_utf8_lossy(&x.0).to_string(),
@@ -123,19 +127,19 @@ impl CommandCompletion {
         let prefix = working_set.get_span_contents(span);
         let prefix = String::from_utf8_lossy(prefix).to_string();
         let results = if find_externals {
-            let results_external =
-                self.external_command_completion(&prefix)
-                    .into_iter()
-                    .map(move |x| Suggestion {
-                        value: x.0,
-                        description: None,
-                        extra: None,
-                        span: reedline::Span {
-                            start: span.start - offset,
-                            end: span.end - offset,
-                        },
-                        score: Some(x.1),
-                    });
+            let results_external = self
+                .external_command_completion(&prefix, matcher)
+                .into_iter()
+                .map(move |x| Suggestion {
+                    value: x.0,
+                    description: None,
+                    extra: None,
+                    span: reedline::Span {
+                        start: span.start - offset,
+                        end: span.end - offset,
+                    },
+                    score: Some(i64::from(x.1 .0)),
+                });
 
             for external in results_external {
                 if results.contains(&external) {
@@ -163,12 +167,13 @@ impl CommandCompletion {
 impl Completer for CommandCompletion {
     fn fetch(
         &mut self,
+        completion_options: CompletionOptions,
         working_set: &StateWorkingSet,
         prefix: Vec<u8>,
         span: Span,
         offset: usize,
         pos: usize,
-    ) -> (Vec<Suggestion>, CompletionOptions) {
+    ) -> Vec<Suggestion> {
         let last = self
             .flattened
             .iter()
@@ -186,12 +191,15 @@ impl Completer for CommandCompletion {
             })
             .last();
 
-        // Options
-        let options = CompletionOptions::new(true, true, SortBy::LevenshteinDistance);
+        let matcher = match completion_options.matcher {
+            Matcher::Prefix => todo!(),
+            Matcher::Fuzzy => FuzzyMatcher::new(),
+        };
 
         // The last item here would be the earliest shape that could possible by part of this subcommand
         let subcommands = if let Some(last) = last {
             self.complete_commands(
+                &matcher,
                 working_set,
                 Span {
                     start: last.0.start,
@@ -205,7 +213,7 @@ impl Completer for CommandCompletion {
         };
 
         if !subcommands.is_empty() {
-            return (subcommands, options);
+            return subcommands;
         }
 
         let commands = if matches!(self.flat_shape, nu_parser::FlatShape::External)
@@ -213,7 +221,7 @@ impl Completer for CommandCompletion {
             || ((span.end - span.start) == 0)
         {
             // we're in a gap or at a command
-            self.complete_commands(working_set, span, offset, true)
+            self.complete_commands(&matcher, working_set, span, offset, true)
         } else {
             vec![]
         };
@@ -279,7 +287,7 @@ impl Completer for CommandCompletion {
             .chain(commands.into_iter())
             .collect::<Vec<_>>();
 
-        (output, options)
+        output
     }
 
     // Replace base filter with no filter once all the results are already based in the current path

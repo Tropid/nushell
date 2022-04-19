@@ -23,12 +23,13 @@ impl FileCompletion {
 impl Completer for FileCompletion {
     fn fetch(
         &mut self,
+        _: CompletionOptions,
         _: &StateWorkingSet,
         prefix: Vec<u8>,
         span: Span,
         offset: usize,
         _: usize,
-    ) -> (Vec<Suggestion>, CompletionOptions) {
+    ) -> Vec<Suggestion> {
         let cwd = if let Some(d) = self.engine_state.env_vars.get("PWD") {
             match d.as_string() {
                 Ok(s) => s,
@@ -52,10 +53,7 @@ impl Completer for FileCompletion {
             })
             .collect();
 
-        // Options
-        let options = CompletionOptions::default();
-
-        (output, options)
+        output
     }
 
     // Sort results prioritizing the non hidden folders

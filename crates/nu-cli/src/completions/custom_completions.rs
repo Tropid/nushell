@@ -1,4 +1,4 @@
-use crate::completions::{Completer, CompletionOptions, SortBy};
+use crate::completions::{Completer, CompletionOptions};
 use nu_engine::eval_call;
 use nu_protocol::{
     ast::{Argument, Call, Expr, Expression},
@@ -55,12 +55,13 @@ impl CustomCompletion {
 impl Completer for CustomCompletion {
     fn fetch(
         &mut self,
+        _: CompletionOptions,
         _: &StateWorkingSet,
         _: Vec<u8>,
         span: Span,
         offset: usize,
         pos: usize,
-    ) -> (Vec<Suggestion>, CompletionOptions) {
+    ) -> Vec<Suggestion> {
         // Line position
         let line_pos = pos - offset;
 
@@ -92,7 +93,7 @@ impl Completer for CustomCompletion {
         );
 
         // Parse result
-        let (suggestions, options) = match result {
+        let suggestions = match result {
             Ok(pd) => {
                 let value = pd.into_value(span);
                 match &value {
@@ -105,46 +106,21 @@ impl Completer for CustomCompletion {
                                     .map(|it| self.map_completions(it.iter(), span, offset))
                             })
                             .unwrap_or_default();
-                        let options = value.get_data_by_key("options");
 
-                        let options = if let Some(Value::Record { .. }) = &options {
-                            let options = options.unwrap_or_default();
-                            let should_sort = options
-                                .get_data_by_key("sort")
-                                .and_then(|val| val.as_bool().ok())
-                                .unwrap_or(false);
-
-                            CompletionOptions {
-                                case_sensitive: options
-                                    .get_data_by_key("case_sensitive")
-                                    .and_then(|val| val.as_bool().ok())
-                                    .unwrap_or(true),
-                                positional: options
-                                    .get_data_by_key("positional")
-                                    .and_then(|val| val.as_bool().ok())
-                                    .unwrap_or(true),
-                                sort_by: if should_sort {
-                                    SortBy::Ascending
-                                } else {
-                                    SortBy::None
-                                },
-                            }
-                        } else {
-                            CompletionOptions::default()
-                        };
-
-                        (completions, options)
+                        completions
                     }
                     Value::List { vals, .. } => {
                         let completions = self.map_completions(vals.iter(), span, offset);
-                        (completions, CompletionOptions::default())
+                        completions
                     }
-                    _ => (vec![], CompletionOptions::default()),
+                    _ => vec![],
                 }
             }
-            _ => (vec![], CompletionOptions::default()),
+            _ => vec![],
         };
 
-        (suggestions, options)
+        // TODO: what to do with CompletionOptions here?
+
+        suggestions
     }
 }

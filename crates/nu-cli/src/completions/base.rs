@@ -7,12 +7,13 @@ use reedline::Suggestion;
 pub trait Completer {
     fn fetch(
         &mut self,
+        completion_options: CompletionOptions,
         working_set: &StateWorkingSet,
         prefix: Vec<u8>,
         span: Span,
         offset: usize,
         pos: usize,
-    ) -> (Vec<Suggestion>, CompletionOptions);
+    ) -> Vec<Suggestion>;
 
     // Filter results using the completion options
     fn filter(

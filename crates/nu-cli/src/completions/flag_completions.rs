@@ -21,12 +21,13 @@ impl FlagCompletion {
 impl Completer for FlagCompletion {
     fn fetch(
         &mut self,
+        _: CompletionOptions,
         working_set: &StateWorkingSet,
         prefix: Vec<u8>,
         span: Span,
         offset: usize,
         _: usize,
-    ) -> (Vec<Suggestion>, CompletionOptions) {
+    ) -> Vec<Suggestion> {
         // Check if it's a flag
         if let Expr::Call(call) = &self.expression.expr {
             let decl = working_set.get_decl(call.decl_id);
@@ -75,9 +76,9 @@ impl Completer for FlagCompletion {
                 }
             }
 
-            return (output, CompletionOptions::default());
+            return output;
         }
 
-        (vec![], CompletionOptions::default())
+        vec![]
     }
 }

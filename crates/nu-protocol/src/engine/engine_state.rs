@@ -1,5 +1,3 @@
-use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
-
 use super::{Command, Stack};
 use crate::{
     ast::Block, AliasId, BlockId, Config, DeclId, Example, Overlay, OverlayId, ShellError,
@@ -446,24 +444,29 @@ impl EngineState {
         None
     }
 
-    pub fn find_commands_by_prefix(&self, name: &[u8]) -> Vec<(Vec<u8>, Option<String>, i64)> {
+    pub fn find_commands_by_prefix(
+        &self,
+        name: &[u8],
+        match_func: impl Fn(&str, &str) -> Option<i32>,
+    ) -> Vec<(Vec<u8>, Option<String>, i64)> {
         let mut output = vec![];
 
         if name.is_empty() {
             return output;
         }
 
-        let matcher = SkimMatcherV2::default();
-
         for scope in self.scope.iter().rev() {
             for decl in &scope.decls {
                 let name_str: &str = std::str::from_utf8(name).unwrap();
                 let decl_str: &str = std::str::from_utf8(decl.0).unwrap();
-                let fuzzy_match = matcher.fuzzy_indices(decl_str, name_str);
 
-                if let Some((score, _)) = fuzzy_match {
+                if let Some(score) = match_func(decl_str, name_str) {
                     let command = self.get_decl(*decl.1);
-                    output.push((decl.0.clone(), Some(command.usage().to_string()), score));
+                    output.push((
+                        decl.0.clone(),
+                        Some(command.usage().to_string()),
+                        i64::from(score),
+                    ));
                 }
             }
         }
@@ -1327,29 +1330,36 @@ impl<'a> StateWorkingSet<'a> {
         }
     }
 
-    pub fn find_commands_by_prefix(&self, name: &[u8]) -> Vec<(Vec<u8>, Option<String>, i64)> {
+    pub fn find_commands_by_prefix(
+        &self,
+        name: &[u8],
+        match_func: impl Fn(&str, &str) -> Option<i32>,
+    ) -> Vec<(Vec<u8>, Option<String>, i64)> {
         let mut output = vec![];
 
         if name.is_empty() {
             return output;
         }
 
-        let matcher = SkimMatcherV2::default();
-
         for scope in self.delta.scope.iter().rev() {
             for decl in &scope.decls {
                 let name_str: &str = std::str::from_utf8(name).unwrap();
                 let decl_str: &str = std::str::from_utf8(decl.0).unwrap();
-                let fuzzy_match = matcher.fuzzy_indices(decl_str, name_str);
 
-                if let Some((score, _)) = fuzzy_match {
+                if let Some(score) = match_func(decl_str, name_str) {
                     let command = self.get_decl(*decl.1);
-                    output.push((decl.0.clone(), Some(command.usage().to_string()), score));
+                    output.push((
+                        decl.0.clone(),
+                        Some(command.usage().to_string()),
+                        i64::from(score),
+                    ));
                 }
             }
         }
 
-        let mut permanent = self.permanent_state.find_commands_by_prefix(name);
+        let mut permanent = self
+            .permanent_state
+            .find_commands_by_prefix(name, match_func);
 
         output.append(&mut permanent);
 

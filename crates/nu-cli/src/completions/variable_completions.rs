@@ -30,12 +30,13 @@ impl VariableCompletion {
 impl Completer for VariableCompletion {
     fn fetch(
         &mut self,
+        _: CompletionOptions,
         working_set: &StateWorkingSet,
         prefix: Vec<u8>,
         span: Span,
         offset: usize,
         _: usize,
-    ) -> (Vec<Suggestion>, CompletionOptions) {
+    ) -> Vec<Suggestion> {
         let mut output = vec![];
         let builtins = ["$nu", "$in", "$config", "$env", "$nothing"];
         let var_str = std::str::from_utf8(&self.var_context.0)
@@ -61,7 +62,7 @@ impl Completer for VariableCompletion {
                     });
                 }
 
-                return (output, CompletionOptions::default());
+                return output;
             }
 
             // Completion other variable types
@@ -98,11 +99,11 @@ impl Completer for VariableCompletion {
                                 });
                             }
 
-                            return (output, CompletionOptions::default());
+                            return output
                         }
 
                         _ => {
-                            return (output, CompletionOptions::default());
+                            return output
                         }
                     }
                 }
@@ -154,7 +155,7 @@ impl Completer for VariableCompletion {
 
         output.dedup();
 
-        (output, CompletionOptions::default())
+        output
     }
 }
 
